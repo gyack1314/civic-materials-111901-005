@@ -52,7 +52,8 @@ class Source:
             return 200,{}, {'revision':self.phase,'axis':'lat,lon' if version=='yx' else 'lon,lat','crs':'EPSG:4326','categories':['solar','heat','storage'],'truncated':len(found)>limit,'items':items}
         if path.startswith('/permit/'):
             key=path.rsplit('/',1)[-1]
-            return 200,{'Content-Type':'text/plain; charset=utf-8'},json.dumps({'facility':'F-WRONG' if self.phase==1 and key=='F-A' else key,'permit':'许可-'+key},ensure_ascii=False).encode()
+            actual='F-WRONG' if self.phase==1 and key=='F-A' else key
+            return 200,{'Content-Type':'application/pdf'},(DATA/(actual+'.pdf')).read_bytes()
         return 404,{}, {'error':'无此空间来源'}
 
 class Handler(BaseHTTPRequestHandler):
@@ -83,7 +84,7 @@ class Handler(BaseHTTPRequestHandler):
 
 @contextmanager
 def running_source(port=0):
-    server=ThreadingHTTPServer(('127.0.0.1',port),Handler)
+    server=ThreadingHTTPServer(('0.0.0.0',port),Handler)
     server.source=Source()
     thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
     try: yield 'http://127.0.0.1:'+str(server.server_port),server.source

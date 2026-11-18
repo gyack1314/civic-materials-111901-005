@@ -31,6 +31,8 @@ class SourceContract(unittest.TestCase):
         with running_source() as (base,s):
             v=json.loads(self.get(base+'/catalog?bbox=0,0,10,10')[2]);self.assertTrue(v['truncated'])
             axis=json.loads(self.get(base+'/catalog?bbox=0,0,10,10&api=yx&category=storage')[2]);self.assertEqual(axis['axis'],'lat,lon')
-            self.post(base+'/__admin/advance',{'phase':1});self.assertEqual(json.loads(self.get(base+'/permit/F-A')[2])['facility'],'F-WRONG')
+            self.post(base+'/__admin/advance',{'phase':1});raw=self.get(base+'/permit/F-A')[2]
+            import fitz
+            with fitz.open(stream=raw,filetype='pdf') as doc:self.assertIn('F-WRONG',doc[0].get_text())
 
 if __name__=='__main__':unittest.main()
