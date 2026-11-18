@@ -12,6 +12,18 @@
 
 执行 python -m unittest discover -s tests -v。这些检查验证本地来源的真实响应与素材可读性，不代表资料收集端已经实现。
 
+## 运行采集端
+
+资料收集端位于 `harvest/`，使用方式、覆盖语义与缺口/许可规则见 [docs/harvest-guide.md](docs/harvest-guide.md)。快速开始（先启动上面的来源）：
+
+    python -m harvest run --base http://127.0.0.1:8765 --out ./out
+    python -m harvest permits --base http://127.0.0.1:8765 --out ./out
+    python -m harvest report --out ./out
+
+采集端测试（含模拟持续截断、换界、许可身份错乱与补收恢复）：
+
+    python -I -m unittest discover -s harvest_tests -t .
+
 ## 容器
 
 执行 docker build -t city-spatial-harvest .，然后 docker run --rm -p 8765:8765 city-spatial-harvest。测试可用 docker run --rm city-spatial-harvest python -m unittest discover -s tests -v。

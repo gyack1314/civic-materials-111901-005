@@ -10,3 +10,8 @@ coverage/
 __pycache__/
 *.py[cod]
 .DS_Store
+# 采集端运行产物（数据库、许可原件、报告），不提交版本库
+/out/
+/out-*/
+*.db
+*.sqlite3
