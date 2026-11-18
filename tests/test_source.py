@@ -1,0 +1,36 @@
+"""本地来源契约检查，不包含尚未实现的采集逻辑。"""
+import gzip
+import http.client
+import json
+from pathlib import Path
+import sys
+import unittest
+from urllib.parse import urlsplit
+sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
+from source.server import running_source
+
+class SourceContract(unittest.TestCase):
+    def request(self,url,payload=None,headers=None):
+        parts=urlsplit(url);conn=http.client.HTTPConnection(parts.hostname,parts.port,timeout=10)
+        body=json.dumps(payload).encode() if payload is not None else None
+        conn.request('POST' if payload is not None else 'GET',parts.path+('?' + parts.query if parts.query else ''),body,headers or {})
+        response=conn.getresponse();result=(response.status,dict(response.getheaders()),response.read());conn.close();return result
+    def get(self,url,headers=None):return self.request(url,headers=headers)
+    def post(self,url,payload):
+        status,headers,body=self.request(url,payload)
+        self.assertLess(status,300)
+        return json.loads(body)
+    def test_observable_source(self):
+        with running_source() as (base,source):
+            self.assertEqual(self.get(base+'/health')[0],200)
+            self.post(base+'/__admin/advance',{'seconds':2})
+            self.assertEqual(json.loads(self.get(base+'/health')[2])['time'],2)
+            self.assertGreaterEqual(len(json.loads(self.get(base+'/__admin/log')[2])),3)
+
+    def test_truncation_axis_and_permit(self):
+        with running_source() as (base,s):
+            v=json.loads(self.get(base+'/catalog?bbox=0,0,10,10')[2]);self.assertTrue(v['truncated'])
+            axis=json.loads(self.get(base+'/catalog?bbox=0,0,10,10&api=yx&category=storage')[2]);self.assertEqual(axis['axis'],'lat,lon')
+            self.post(base+'/__admin/advance',{'phase':1});self.assertEqual(json.loads(self.get(base+'/permit/F-A')[2])['facility'],'F-WRONG')
+
+if __name__=='__main__':unittest.main()
